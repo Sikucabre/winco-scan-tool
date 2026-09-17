@@ -206,11 +206,12 @@ main {
 }
 
 .remove-btn {
-  display: block;
-  width: 100%;
-  margin-top: 12px;
-  padding: 12px;
-  font-size: 15px;
+  flex: 0 0 14%;
+  min-width: 36px;
+  height: 38px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
   font-weight: 700;
   border: none;
   border-radius: var(--radius-sm);

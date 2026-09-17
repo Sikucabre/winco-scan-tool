@@ -485,16 +485,17 @@ function renderCartItem(item) {
   plus.addEventListener("click", () => changeQty(item.barcode, 1));
   qtyControls.append(minus, qtyInput, plus);
 
-  bottomRow.append(unitEl, qtyControls);
-
+  // Sits on the far left, away from the quantity controls, so reaching for
+  // - can't land on it.
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
   removeBtn.className = "remove-btn";
-  removeBtn.textContent = "Remove";
+  removeBtn.textContent = "×";
   removeBtn.setAttribute("aria-label", `Remove ${item.name} from the cart`);
   removeBtn.addEventListener("click", () => removeItem(item.barcode));
 
-  li.append(topRow, bottomRow, removeBtn);
+  bottomRow.append(removeBtn, unitEl, qtyControls);
+  li.append(topRow, bottomRow);
   return li;
 }
 
