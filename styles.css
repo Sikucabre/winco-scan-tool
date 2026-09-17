@@ -71,13 +71,12 @@ main {
 
 .reader {
   width: 100%;
+  min-height: 260px;
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  min-height: 0;
 }
-.reader:empty { display: none; }
 
 .btn {
   border: 1px solid var(--line);
