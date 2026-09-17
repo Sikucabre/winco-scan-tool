@@ -17,6 +17,7 @@ const BARCODE_FORMATS = ["EANUPC", "Code128"];
 // Scanning the same item twice means pulling it out of frame and back in,
 // which is what buying two of something looks like anyway.
 const RESET_AFTER_EMPTY_FRAMES = 5;
+const MAX_QTY = 999;
 
 const els = {
   total: document.getElementById("total"),
@@ -378,13 +379,24 @@ function addToCart(barcode, name, price) {
   return existing ? existing.qty : 1;
 }
 
+// Quantity bottoms out at 1 -- the Remove button is the only way to drop an
+// item, so a stray tap on - can't silently delete a line.
+function setQty(barcode, qty) {
+  const item = state.cart.find((entry) => entry.barcode === barcode);
+  if (!item) return;
+  item.qty = Math.min(Math.max(Math.floor(qty), 1), MAX_QTY);
+  saveCart();
+  render();
+}
+
 function changeQty(barcode, delta) {
   const item = state.cart.find((entry) => entry.barcode === barcode);
   if (!item) return;
-  item.qty += delta;
-  if (item.qty <= 0) {
-    state.cart = state.cart.filter((entry) => entry.barcode !== barcode);
-  }
+  setQty(barcode, item.qty + delta);
+}
+
+function removeItem(barcode) {
+  state.cart = state.cart.filter((entry) => entry.barcode !== barcode);
   saveCart();
   render();
 }
@@ -441,21 +453,48 @@ function renderCartItem(item) {
   minus.type = "button";
   minus.className = "qty-btn";
   minus.textContent = "−";
-  minus.setAttribute("aria-label", `Remove one ${item.name}`);
+  minus.setAttribute("aria-label", `One fewer ${item.name}`);
   minus.addEventListener("click", () => changeQty(item.barcode, -1));
-  const qtyEl = document.createElement("span");
-  qtyEl.className = "qty-value";
-  qtyEl.textContent = item.qty;
+
+  const qtyInput = document.createElement("input");
+  qtyInput.className = "qty-input";
+  qtyInput.type = "number";
+  qtyInput.inputMode = "numeric";
+  qtyInput.min = "1";
+  qtyInput.max = String(MAX_QTY);
+  qtyInput.step = "1";
+  qtyInput.value = item.qty;
+  qtyInput.setAttribute("aria-label", `Quantity of ${item.name}`);
+  // Commit on blur/enter rather than each keystroke: re-rendering mid-typing
+  // would tear the field out from under the keyboard.
+  qtyInput.addEventListener("change", () => {
+    const typed = parseInt(qtyInput.value, 10);
+    if (Number.isNaN(typed)) {
+      qtyInput.value = item.qty; // leave the quantity alone on junk input
+      return;
+    }
+    setQty(item.barcode, typed);
+  });
+  qtyInput.addEventListener("focus", () => qtyInput.select());
+
   const plus = document.createElement("button");
   plus.type = "button";
   plus.className = "qty-btn";
   plus.textContent = "+";
-  plus.setAttribute("aria-label", `Add one ${item.name}`);
+  plus.setAttribute("aria-label", `One more ${item.name}`);
   plus.addEventListener("click", () => changeQty(item.barcode, 1));
-  qtyControls.append(minus, qtyEl, plus);
+  qtyControls.append(minus, qtyInput, plus);
 
   bottomRow.append(unitEl, qtyControls);
-  li.append(topRow, bottomRow);
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "remove-btn";
+  removeBtn.textContent = "Remove";
+  removeBtn.setAttribute("aria-label", `Remove ${item.name} from the cart`);
+  removeBtn.addEventListener("click", () => removeItem(item.barcode));
+
+  li.append(topRow, bottomRow, removeBtn);
   return li;
 }
 

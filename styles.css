@@ -9,6 +9,8 @@
   --dim: #6f776f;
   --lime: #dfff21;
   --bad: #ff8a7a;
+  --danger: #d93a3f;
+  --danger-active: #b42a2f;
   --radius: 14px;
   --radius-sm: 10px;
 }
@@ -185,10 +187,35 @@ main {
   color: var(--text);
 }
 .qty-btn:active { background: var(--line); }
-.qty-value {
-  min-width: 30px;
+.qty-input {
+  width: 62px;
+  height: 38px;
   text-align: center;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px; /* keeps iOS from zooming the page on focus */
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  -moz-appearance: textfield;
 }
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.remove-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--danger);
+  color: #fff;
+}
+.remove-btn:active { background: var(--danger-active); }
 .empty-state { margin-top: 12px; color: var(--dim); font-size: 14px; text-align: center; }
