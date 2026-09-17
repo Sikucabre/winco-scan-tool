@@ -1,12 +1,18 @@
 // Grocery Scanner — camera barcode scan -> price-list lookup -> running cart total.
-// No build step, no framework. Barcode decoding via the html5-qrcode CDN script
-// loaded in index.html (window.Html5Qrcode).
+// No build step, no framework. Barcode decoding via the zxing-wasm CDN script
+// loaded in index.html (window.ZXingWASM) -- the actual ZXing C++ decoder
+// compiled to WebAssembly. Swapped in after html5-qrcode's bundled JS decoder
+// proved unable to read any 1D barcode on iOS Safari (a well-known limitation
+// of that library, not a resolution/config issue -- camera preview and the
+// scan loop both worked fine, decoding itself just never succeeded).
 
 const CSV_PATH = "./winco-price-list.csv";
 const BARCODE_COLUMN = "full_barcode";
 const NAME_COLUMNS = ["item_name", "name", "description", "product_name", "item", "product"];
 const PRICE_COLUMNS = ["price", "unit_price", "retail_price", "cost"];
 const SCAN_COOLDOWN_MS = 1200;
+const SCAN_INTERVAL_MS = 200;
+const BARCODE_FORMATS = ["EANUPC", "Code128"];
 
 const els = {
   total: document.getElementById("total"),
@@ -14,6 +20,7 @@ const els = {
   listStatus: document.getElementById("list-status"),
   clearBtn: document.getElementById("clear-btn"),
   reader: document.getElementById("reader"),
+  video: document.getElementById("camera-video"),
   scanToggle: document.getElementById("scan-toggle"),
   toast: document.getElementById("toast"),
   manualPanel: document.getElementById("manual-panel"),
@@ -34,7 +41,10 @@ const state = {
   cart: [], // { id, barcode, name, price }
   scanning: false,
   paused: false,
-  html5QrCode: null,
+  stream: null,
+  scanTimer: null,
+  canvas: null,
+  framesSeen: 0,
 };
 
 init();
@@ -157,37 +167,22 @@ function bindEvents() {
   els.manualCancel.addEventListener("click", closeManualPanel);
 }
 
-async function toggleScanning() {
+function toggleScanning() {
   if (state.scanning) {
-    await stopScanning();
+    stopScanning();
   } else {
-    await startScanning();
+    startScanning();
   }
 }
 
 async function startScanning() {
-  if (!window.Html5Qrcode) {
-    showToast("Camera scanner failed to load. Check your connection.", "error");
+  if (!window.ZXingWASM) {
+    showToast("Barcode scanner failed to load. Check your connection.", "error");
     return;
   }
   try {
-    state.html5QrCode = new Html5Qrcode("reader", {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-      ],
-      verbose: false,
-      // Delegate to the OS's native barcode reader when the browser has one
-      // (Android Chrome) -- far more reliable on 1D barcodes than the JS
-      // decoder, which is the fallback everywhere else.
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-    });
-    let framesSeen = 0;
-    await state.html5QrCode.start(
-      {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
         facingMode: "environment",
         // Request a high-res stream -- the default camera resolution is
         // often too coarse to resolve a UPC/EAN's fine bars at any real
@@ -195,42 +190,78 @@ async function startScanning() {
         width: { min: 640, ideal: 1920, max: 1920 },
         height: { min: 480, ideal: 1080, max: 1080 },
       },
-      { fps: 10 },
-      onDecoded,
-      () => {
-        // Fires on every frame that didn't decode -- a rising count here
-        // proves the scan loop is actually running frame-to-frame.
-        framesSeen++;
-        els.debugStatus.textContent = `Scanning… ${framesSeen} frames checked`;
-      }
-    );
+    });
+    state.stream = stream;
+    els.video.srcObject = stream;
+    await els.video.play();
+
     state.scanning = true;
+    state.framesSeen = 0;
     els.scanToggle.textContent = "Stop scanning";
+    scanLoop();
   } catch (err) {
     console.error("Camera start failed:", err);
     showToast("Couldn't access the camera. Check permissions.", "error");
   }
 }
 
-async function stopScanning() {
-  if (state.html5QrCode) {
-    try {
-      await state.html5QrCode.stop();
-      state.html5QrCode.clear();
-    } catch (err) {
-      console.error("Camera stop failed:", err);
-    }
-  }
-  state.html5QrCode = null;
+function stopScanning() {
   state.scanning = false;
+  if (state.scanTimer) {
+    clearTimeout(state.scanTimer);
+    state.scanTimer = null;
+  }
+  if (state.stream) {
+    state.stream.getTracks().forEach((track) => track.stop());
+    state.stream = null;
+  }
+  els.video.srcObject = null;
   els.scanToggle.textContent = "Start scanning";
   els.debugStatus.textContent = "";
 }
 
-function onDecoded(decodedText, decodedResult) {
+async function scanLoop() {
+  if (!state.scanning) return;
+  try {
+    const frame = grabFrame();
+    if (frame && !state.paused) {
+      const results = await ZXingWASM.readBarcodes(frame, {
+        formats: BARCODE_FORMATS,
+        tryHarder: true,
+        maxNumberOfSymbols: 1,
+      });
+      state.framesSeen++;
+      els.debugStatus.textContent = `Scanning… ${state.framesSeen} frames checked`;
+      if (results.length > 0) {
+        onDecoded(results[0].text, results[0].format);
+      }
+    }
+  } catch (err) {
+    console.error("Decode error:", err);
+  }
+  if (state.scanning) {
+    state.scanTimer = setTimeout(scanLoop, SCAN_INTERVAL_MS);
+  }
+}
+
+function grabFrame() {
+  const video = els.video;
+  if (!video.videoWidth) return null; // stream not ready yet
+  if (!state.canvas) {
+    state.canvas = document.createElement("canvas");
+  }
+  const canvas = state.canvas;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+function onDecoded(decodedText, format) {
   if (state.paused) return;
   state.paused = true;
-  els.debugStatus.textContent = `Decoded: "${decodedText}" (${decodedResult?.result?.format?.formatName || "unknown format"})`;
+  els.debugStatus.textContent = `Decoded: "${decodedText}" (${format})`;
 
   const match = lookupBarcode(decodedText);
   if (match) {
