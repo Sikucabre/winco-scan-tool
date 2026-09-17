@@ -11,13 +11,17 @@ const STORAGE_KEY = "winco-scan-cart";
 const BARCODE_COLUMN = "full_barcode";
 const NAME_COLUMNS = ["item_name", "name", "description", "product_name", "item", "product"];
 const PRICE_COLUMNS = ["price", "unit_price", "retail_price", "cost"];
-const SCAN_INTERVAL_MS = 200;
-const BARCODE_FORMATS = ["EANUPC", "Code128"];
-// Consecutive empty frames before the last-scanned code can be added again.
-// Scanning the same item twice means pulling it out of frame and back in,
-// which is what buying two of something looks like anyway.
-const RESET_AFTER_EMPTY_FRAMES = 5;
+const SCAN_INTERVAL_MS = 60;
 const MAX_QTY = 999;
+
+const READER_OPTIONS = {
+  formats: ["EANUPC", "Code128"],
+  tryHarder: true,
+  tryRotate: true, // sideways and upside-down barcodes
+  tryInvert: true, // light bars on a dark label
+  tryDownscale: true,
+  maxNumberOfSymbols: 1, // stop at the first hit instead of scanning the whole frame
+};
 
 const els = {
   total: document.getElementById("total"),
@@ -44,12 +48,9 @@ const state = {
   priceList: new Map(), // normalized barcode -> { name, price }
   cart: [], // { barcode, name, price, qty }
   scanning: false,
-  paused: false,
   stream: null,
   scanTimer: null,
   canvas: null,
-  lastCode: null,
-  emptyFrames: 0,
 };
 
 init();
@@ -244,8 +245,6 @@ async function startScanning() {
     await els.video.play();
 
     state.scanning = true;
-    state.lastCode = null;
-    state.emptyFrames = 0;
     els.scanToggle.textContent = "Stop scanning";
     scanLoop();
   } catch (err) {
@@ -272,17 +271,11 @@ async function scanLoop() {
   if (!state.scanning) return;
   try {
     const frame = grabFrame();
-    if (frame && !state.paused) {
-      const results = await ZXingWASM.readBarcodes(frame, {
-        formats: BARCODE_FORMATS,
-        tryHarder: true,
-        maxNumberOfSymbols: 1,
-      });
+    if (frame) {
+      const results = await ZXingWASM.readBarcodes(frame, READER_OPTIONS);
+      if (!state.scanning) return; // stopped mid-decode
       if (results.length > 0) {
-        state.emptyFrames = 0;
-        onDecoded(results[0].text);
-      } else if (++state.emptyFrames >= RESET_AFTER_EMPTY_FRAMES) {
-        state.lastCode = null; // item left the frame; it can be scanned again
+        onDecoded(results[0].text); // stops the scanner, ending this loop
       }
     }
   } catch (err) {
@@ -307,10 +300,11 @@ function grabFrame() {
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
+// One tap of Start scanning registers exactly one item: the camera shuts off
+// the moment something decodes, so nothing can be double-counted while the
+// barcode is still in frame.
 function onDecoded(decodedText) {
-  if (state.paused) return;
-  if (decodedText === state.lastCode) return; // still pointed at the item we just handled
-  state.lastCode = decodedText;
+  stopScanning();
 
   const match = lookupBarcode(decodedText);
   if (match) {
@@ -319,7 +313,6 @@ function onDecoded(decodedText) {
     showToast(`Added: ${match.name} — ${formatPrice(match.price)}${suffix}`, "found");
   } else {
     openManualPanel(decodedText);
-    state.paused = true; // stop decoding while the price is being typed
   }
 }
 
@@ -338,7 +331,6 @@ function openManualPanel(barcode) {
 function closeManualPanel() {
   els.manualPanel.hidden = true;
   delete els.manualPanel.dataset.barcode;
-  state.paused = false;
 }
 
 function submitManualEntry() {
@@ -359,17 +351,16 @@ function submitManualEntry() {
 // ---------- cart ----------
 
 // Scanning the same barcode again bumps its quantity rather than adding a
-// second line, so the price is only ever recorded once per item.
+// second line, so the price is only ever recorded once per item. Either way
+// the item moves to the top of the list, where the last thing scanned is.
 function addToCart(barcode, name, price) {
   const existing = state.cart.find((item) => item.barcode === barcode);
-  if (existing) {
-    existing.qty++;
-  } else {
-    state.cart.push({ barcode, name, price, qty: 1 });
-  }
+  const entry = existing || { barcode, name, price, qty: 0 };
+  entry.qty++;
+  state.cart = [entry, ...state.cart.filter((item) => item.barcode !== barcode)];
   saveCart();
   render();
-  return existing ? existing.qty : 1;
+  return entry.qty;
 }
 
 // Quantity bottoms out at 1 -- the Remove button is the only way to drop an
