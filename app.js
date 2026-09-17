@@ -51,6 +51,7 @@ const state = {
   stream: null,
   scanTimer: null,
   canvas: null,
+  audioCtx: null,
 };
 
 init();
@@ -229,6 +230,7 @@ async function startScanning() {
     showToast("Barcode scanner failed to load. Check your connection.", "error");
     return;
   }
+  primeAudio(); // must happen inside the tap; iOS won't start audio otherwise
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -286,6 +288,36 @@ async function scanLoop() {
   }
 }
 
+// ---------- scan sound ----------
+
+// iOS only lets audio start from inside a user gesture, so the context is
+// opened on the Start scanning tap. The beep itself fires later, on decode,
+// which iOS allows once the context is already running.
+function primeAudio() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!state.audioCtx) state.audioCtx = new Ctx();
+    if (state.audioCtx.state === "suspended") state.audioCtx.resume();
+  } catch (err) {
+    console.error("Couldn't start audio:", err);
+  }
+}
+
+function playScanSound() {
+  const ctx = state.audioCtx;
+  if (!ctx || ctx.state !== "running") return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "square";
+  osc.frequency.value = 1100;
+  gain.gain.setValueAtTime(0.18, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.11);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.11);
+}
+
 function grabFrame() {
   const video = els.video;
   if (!video.videoWidth) return null; // stream not ready yet
@@ -305,6 +337,7 @@ function grabFrame() {
 // barcode is still in frame.
 function onDecoded(decodedText) {
   stopScanning();
+  playScanSound();
 
   const match = lookupBarcode(decodedText);
   if (match) {
