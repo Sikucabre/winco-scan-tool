@@ -38,7 +38,6 @@ const els = {
   cartHint: document.getElementById("cart-hint"),
   cartList: document.getElementById("cart-list"),
   emptyState: document.getElementById("empty-state"),
-  debugStatus: document.getElementById("debug-status"),
 };
 
 const state = {
@@ -49,7 +48,6 @@ const state = {
   stream: null,
   scanTimer: null,
   canvas: null,
-  framesSeen: 0,
   lastCode: null,
   emptyFrames: 0,
 };
@@ -246,7 +244,6 @@ async function startScanning() {
     await els.video.play();
 
     state.scanning = true;
-    state.framesSeen = 0;
     state.lastCode = null;
     state.emptyFrames = 0;
     els.scanToggle.textContent = "Stop scanning";
@@ -269,7 +266,6 @@ function stopScanning() {
   }
   els.video.srcObject = null;
   els.scanToggle.textContent = "Start scanning";
-  els.debugStatus.textContent = "";
 }
 
 async function scanLoop() {
@@ -282,11 +278,9 @@ async function scanLoop() {
         tryHarder: true,
         maxNumberOfSymbols: 1,
       });
-      state.framesSeen++;
-      els.debugStatus.textContent = `Scanning… ${state.framesSeen} frames checked`;
       if (results.length > 0) {
         state.emptyFrames = 0;
-        onDecoded(results[0].text, results[0].format);
+        onDecoded(results[0].text);
       } else if (++state.emptyFrames >= RESET_AFTER_EMPTY_FRAMES) {
         state.lastCode = null; // item left the frame; it can be scanned again
       }
@@ -313,11 +307,10 @@ function grabFrame() {
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
-function onDecoded(decodedText, format) {
+function onDecoded(decodedText) {
   if (state.paused) return;
   if (decodedText === state.lastCode) return; // still pointed at the item we just handled
   state.lastCode = decodedText;
-  els.debugStatus.textContent = `Decoded: "${decodedText}" (${format})`;
 
   const match = lookupBarcode(decodedText);
   if (match) {
