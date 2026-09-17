@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grocery Scanner</title>
+<meta name="description" content="Scan grocery barcodes and track a running total.">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="total-row">
+    <div>
+      <div class="total-label">Total</div>
+      <div class="total" id="total">$0.00</div>
+    </div>
+    <button id="clear-btn" class="btn btn-ghost" type="button">Clear cart</button>
+  </div>
+  <div class="meta-row">
+    <span id="item-count">0 items</span>
+    <span id="list-status" class="list-status"></span>
+  </div>
+</header>
+
+<main>
+  <section class="scan-section">
+    <div id="reader" class="reader"></div>
+    <button id="scan-toggle" class="btn btn-primary btn-block" type="button">Start scanning</button>
+    <div id="toast" class="toast" hidden></div>
+  </section>
+
+  <section id="manual-panel" class="manual-panel" hidden>
+    <p class="manual-title">Not found — add price manually</p>
+    <p class="manual-barcode">Barcode: <span id="manual-barcode-value"></span></p>
+    <label class="field">
+      <span>Item name (optional)</span>
+      <input id="manual-name" type="text" placeholder="e.g. Bananas" autocomplete="off">
+    </label>
+    <label class="field">
+      <span>Price</span>
+      <input id="manual-price" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+    </label>
+    <p id="manual-error" class="manual-error" hidden></p>
+    <div class="manual-actions">
+      <button id="manual-cancel" class="btn btn-ghost" type="button">Skip</button>
+      <button id="manual-add" class="btn btn-primary" type="button">Add to cart</button>
+    </div>
+  </section>
+
+  <section class="cart-section">
+    <p class="cart-hint" id="cart-hint" hidden>Tap an item to remove it</p>
+    <ul id="cart-list" class="cart-list"></ul>
+    <p id="empty-state" class="empty-state">Scan a barcode to add your first item.</p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
