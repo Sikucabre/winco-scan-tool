@@ -182,7 +182,7 @@ async function startScanning() {
     });
     await state.html5QrCode.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 280, height: 160 } },
+      { fps: 10 },
       onDecoded,
       () => {} // ignore per-frame "not found" noise
     );
