@@ -7,6 +7,7 @@
 // scan loop both worked fine, decoding itself just never succeeded).
 
 const CSV_PATH = "./winco-price-list.csv";
+const STORAGE_KEY = "winco-scan-cart";
 const BARCODE_COLUMN = "full_barcode";
 const NAME_COLUMNS = ["item_name", "name", "description", "product_name", "item", "product"];
 const PRICE_COLUMNS = ["price", "unit_price", "retail_price", "cost"];
@@ -41,7 +42,7 @@ const els = {
 
 const state = {
   priceList: new Map(), // normalized barcode -> { name, price }
-  cart: [], // { id, barcode, name, price }
+  cart: [], // { barcode, name, price, qty }
   scanning: false,
   paused: false,
   stream: null,
@@ -55,9 +56,52 @@ const state = {
 init();
 
 async function init() {
-  await loadPriceList();
-  bindEvents();
+  state.cart = loadCart();
   render();
+  bindEvents();
+  await loadPriceList();
+}
+
+// ---------- persistence ----------
+
+// The cart survives leaving the app, locking the phone or reloading mid-trip.
+// It's per-device and never leaves the phone.
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Saved by an older version, hand-edited, or half-written: keep only
+    // entries that are actually usable rather than rendering garbage.
+    return parsed
+      .filter(
+        (item) =>
+          item &&
+          typeof item.barcode === "string" &&
+          typeof item.name === "string" &&
+          Number.isFinite(item.price) &&
+          Number.isFinite(item.qty) &&
+          item.qty > 0
+      )
+      .map((item) => ({
+        barcode: item.barcode,
+        name: item.name,
+        price: item.price,
+        qty: Math.floor(item.qty),
+      }));
+  } catch (err) {
+    console.error("Couldn't restore the saved cart:", err);
+    return [];
+  }
+}
+
+function saveCart() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cart));
+  } catch (err) {
+    console.error("Couldn't save the cart:", err);
+  }
 }
 
 // ---------- price list ----------
@@ -329,6 +373,7 @@ function addToCart(barcode, name, price) {
   } else {
     state.cart.push({ barcode, name, price, qty: 1 });
   }
+  saveCart();
   render();
   return existing ? existing.qty : 1;
 }
@@ -340,6 +385,7 @@ function changeQty(barcode, delta) {
   if (item.qty <= 0) {
     state.cart = state.cart.filter((entry) => entry.barcode !== barcode);
   }
+  saveCart();
   render();
 }
 
@@ -347,6 +393,7 @@ function clearCart() {
   if (state.cart.length === 0) return;
   if (!confirm("Clear the cart?")) return;
   state.cart = [];
+  saveCart();
   render();
 }
 
