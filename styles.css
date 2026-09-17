@@ -31,6 +31,20 @@ button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 p { margin: 0; }
 
+/* Scrolls away on purpose, so the sticky total below it keeps the screen. */
+.app-title {
+  margin: 0;
+  padding: 18px 16px 12px;
+  font-family: "Bangers", "Comic Sans MS", cursive;
+  font-size: clamp(32px, 9.5vw, 46px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: .035em;
+  text-align: center;
+  color: var(--lime);
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, .55);
+}
+
 .topbar {
   position: sticky;
   top: 0;
