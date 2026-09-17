@@ -103,6 +103,14 @@ main {
 .toast.found { border-color: var(--lime); color: var(--lime); }
 .toast.error { border-color: var(--bad); color: var(--bad); }
 
+.debug-status {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--dim);
+  text-align: center;
+  min-height: 14px;
+}
+
 .manual-panel {
   margin-top: 14px;
   padding: 16px;

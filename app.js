@@ -26,6 +26,7 @@ const els = {
   cartHint: document.getElementById("cart-hint"),
   cartList: document.getElementById("cart-list"),
   emptyState: document.getElementById("empty-state"),
+  debugStatus: document.getElementById("debug-status"),
 };
 
 const state = {
@@ -180,11 +181,17 @@ async function startScanning() {
       ],
       verbose: false,
     });
+    let framesSeen = 0;
     await state.html5QrCode.start(
       { facingMode: "environment" },
       { fps: 10 },
       onDecoded,
-      () => {} // ignore per-frame "not found" noise
+      () => {
+        // Fires on every frame that didn't decode -- a rising count here
+        // proves the scan loop is actually running frame-to-frame.
+        framesSeen++;
+        els.debugStatus.textContent = `Scanning… ${framesSeen} frames checked`;
+      }
     );
     state.scanning = true;
     els.scanToggle.textContent = "Stop scanning";
@@ -206,11 +213,13 @@ async function stopScanning() {
   state.html5QrCode = null;
   state.scanning = false;
   els.scanToggle.textContent = "Start scanning";
+  els.debugStatus.textContent = "";
 }
 
-function onDecoded(decodedText) {
+function onDecoded(decodedText, decodedResult) {
   if (state.paused) return;
   state.paused = true;
+  els.debugStatus.textContent = `Decoded: "${decodedText}" (${decodedResult?.result?.format?.formatName || "unknown format"})`;
 
   const match = lookupBarcode(decodedText);
   if (match) {
