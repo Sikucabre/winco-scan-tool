@@ -276,8 +276,9 @@ function onDecoded(decodedText, format) {
 
   const match = lookupBarcode(decodedText);
   if (match) {
-    addToCart(decodedText, match.name, match.price);
-    showToast(`Added: ${match.name} — ${formatPrice(match.price)}`, "found");
+    const qty = addToCart(decodedText, match.name, match.price);
+    const suffix = qty > 1 ? ` (×${qty})` : "";
+    showToast(`Added: ${match.name} — ${formatPrice(match.price)}${suffix}`, "found");
   } else {
     openManualPanel(decodedText);
     state.paused = true; // stop decoding while the price is being typed
@@ -311,25 +312,34 @@ function submitManualEntry() {
     return;
   }
   const name = els.manualName.value.trim() || `Unknown item (${barcode})`;
-  addToCart(barcode, name, price);
-  showToast(`Added: ${name} — ${formatPrice(price)}`, "found");
+  const qty = addToCart(barcode, name, price);
+  const suffix = qty > 1 ? ` (×${qty})` : "";
+  showToast(`Added: ${name} — ${formatPrice(price)}${suffix}`, "found");
   closeManualPanel();
 }
 
 // ---------- cart ----------
 
+// Scanning the same barcode again bumps its quantity rather than adding a
+// second line, so the price is only ever recorded once per item.
 function addToCart(barcode, name, price) {
-  state.cart.push({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    barcode,
-    name,
-    price,
-  });
+  const existing = state.cart.find((item) => item.barcode === barcode);
+  if (existing) {
+    existing.qty++;
+  } else {
+    state.cart.push({ barcode, name, price, qty: 1 });
+  }
   render();
+  return existing ? existing.qty : 1;
 }
 
-function removeFromCart(id) {
-  state.cart = state.cart.filter((item) => item.id !== id);
+function changeQty(barcode, delta) {
+  const item = state.cart.find((entry) => entry.barcode === barcode);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) {
+    state.cart = state.cart.filter((entry) => entry.barcode !== barcode);
+  }
   render();
 }
 
@@ -343,9 +353,10 @@ function clearCart() {
 // ---------- rendering ----------
 
 function render() {
-  const total = state.cart.reduce((sum, item) => sum + item.price, 0);
+  const total = state.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const count = state.cart.reduce((sum, item) => sum + item.qty, 0);
   els.total.textContent = formatPrice(total);
-  els.itemCount.textContent = `${state.cart.length} item${state.cart.length === 1 ? "" : "s"}`;
+  els.itemCount.textContent = `${count} item${count === 1 ? "" : "s"}`;
 
   els.cartList.innerHTML = "";
   const hasItems = state.cart.length > 0;
@@ -353,28 +364,52 @@ function render() {
   els.cartHint.hidden = !hasItems;
 
   for (const item of state.cart) {
-    const li = document.createElement("li");
-    li.className = "cart-item";
-    li.setAttribute("role", "button");
-    li.setAttribute("tabindex", "0");
-
-    const left = document.createElement("div");
-    const nameEl = document.createElement("div");
-    nameEl.className = "cart-item-name";
-    nameEl.textContent = item.name;
-    const barcodeEl = document.createElement("div");
-    barcodeEl.className = "cart-item-barcode";
-    barcodeEl.textContent = item.barcode;
-    left.append(nameEl, barcodeEl);
-
-    const priceEl = document.createElement("div");
-    priceEl.className = "cart-item-price";
-    priceEl.textContent = formatPrice(item.price);
-
-    li.append(left, priceEl);
-    li.addEventListener("click", () => removeFromCart(item.id));
-    els.cartList.appendChild(li);
+    els.cartList.appendChild(renderCartItem(item));
   }
+}
+
+function renderCartItem(item) {
+  const li = document.createElement("li");
+  li.className = "cart-item";
+
+  const topRow = document.createElement("div");
+  topRow.className = "cart-item-row";
+  const nameEl = document.createElement("span");
+  nameEl.className = "cart-item-name";
+  nameEl.textContent = item.name;
+  const lineTotalEl = document.createElement("span");
+  lineTotalEl.className = "cart-item-price";
+  lineTotalEl.textContent = formatPrice(item.price * item.qty);
+  topRow.append(nameEl, lineTotalEl);
+
+  const bottomRow = document.createElement("div");
+  bottomRow.className = "cart-item-row";
+  const unitEl = document.createElement("span");
+  unitEl.className = "cart-item-unit";
+  unitEl.textContent = `${formatPrice(item.price)} each`;
+
+  const qtyControls = document.createElement("div");
+  qtyControls.className = "qty-controls";
+  const minus = document.createElement("button");
+  minus.type = "button";
+  minus.className = "qty-btn";
+  minus.textContent = "−";
+  minus.setAttribute("aria-label", `Remove one ${item.name}`);
+  minus.addEventListener("click", () => changeQty(item.barcode, -1));
+  const qtyEl = document.createElement("span");
+  qtyEl.className = "qty-value";
+  qtyEl.textContent = item.qty;
+  const plus = document.createElement("button");
+  plus.type = "button";
+  plus.className = "qty-btn";
+  plus.textContent = "+";
+  plus.setAttribute("aria-label", `Add one ${item.name}`);
+  plus.addEventListener("click", () => changeQty(item.barcode, 1));
+  qtyControls.append(minus, qtyEl, plus);
+
+  bottomRow.append(unitEl, qtyControls);
+  li.append(topRow, bottomRow);
+  return li;
 }
 
 function formatPrice(value) {
