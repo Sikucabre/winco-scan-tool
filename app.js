@@ -10,9 +10,12 @@ const CSV_PATH = "./winco-price-list.csv";
 const BARCODE_COLUMN = "full_barcode";
 const NAME_COLUMNS = ["item_name", "name", "description", "product_name", "item", "product"];
 const PRICE_COLUMNS = ["price", "unit_price", "retail_price", "cost"];
-const SCAN_COOLDOWN_MS = 1200;
 const SCAN_INTERVAL_MS = 200;
 const BARCODE_FORMATS = ["EANUPC", "Code128"];
+// Consecutive empty frames before the last-scanned code can be added again.
+// Scanning the same item twice means pulling it out of frame and back in,
+// which is what buying two of something looks like anyway.
+const RESET_AFTER_EMPTY_FRAMES = 5;
 
 const els = {
   total: document.getElementById("total"),
@@ -45,6 +48,8 @@ const state = {
   scanTimer: null,
   canvas: null,
   framesSeen: 0,
+  lastCode: null,
+  emptyFrames: 0,
 };
 
 init();
@@ -197,6 +202,8 @@ async function startScanning() {
 
     state.scanning = true;
     state.framesSeen = 0;
+    state.lastCode = null;
+    state.emptyFrames = 0;
     els.scanToggle.textContent = "Stop scanning";
     scanLoop();
   } catch (err) {
@@ -233,7 +240,10 @@ async function scanLoop() {
       state.framesSeen++;
       els.debugStatus.textContent = `Scanning… ${state.framesSeen} frames checked`;
       if (results.length > 0) {
+        state.emptyFrames = 0;
         onDecoded(results[0].text, results[0].format);
+      } else if (++state.emptyFrames >= RESET_AFTER_EMPTY_FRAMES) {
+        state.lastCode = null; // item left the frame; it can be scanned again
       }
     }
   } catch (err) {
@@ -260,19 +270,17 @@ function grabFrame() {
 
 function onDecoded(decodedText, format) {
   if (state.paused) return;
-  state.paused = true;
+  if (decodedText === state.lastCode) return; // still pointed at the item we just handled
+  state.lastCode = decodedText;
   els.debugStatus.textContent = `Decoded: "${decodedText}" (${format})`;
 
   const match = lookupBarcode(decodedText);
   if (match) {
     addToCart(decodedText, match.name, match.price);
     showToast(`Added: ${match.name} — ${formatPrice(match.price)}`, "found");
-    setTimeout(() => {
-      state.paused = false;
-    }, SCAN_COOLDOWN_MS);
   } else {
     openManualPanel(decodedText);
-    // stays paused until the manual panel is closed
+    state.paused = true; // stop decoding while the price is being typed
   }
 }
 
