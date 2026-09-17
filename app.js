@@ -180,10 +180,21 @@ async function startScanning() {
         Html5QrcodeSupportedFormats.CODE_128,
       ],
       verbose: false,
+      // Delegate to the OS's native barcode reader when the browser has one
+      // (Android Chrome) -- far more reliable on 1D barcodes than the JS
+      // decoder, which is the fallback everywhere else.
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
     });
     let framesSeen = 0;
     await state.html5QrCode.start(
-      { facingMode: "environment" },
+      {
+        facingMode: "environment",
+        // Request a high-res stream -- the default camera resolution is
+        // often too coarse to resolve a UPC/EAN's fine bars at any real
+        // distance.
+        width: { min: 640, ideal: 1920, max: 1920 },
+        height: { min: 480, ideal: 1080, max: 1080 },
+      },
       { fps: 10 },
       onDecoded,
       () => {
