@@ -57,3 +57,35 @@ receipt_code,item_name,unit_price,price_type,notes,full_barcode
 85921300565,Suja Gut Health,2.98,each,,859213005650
 5114137319,S/B Sponge,2.50,each,taxable,051141373195
 9792812061,SR Rico Dessert,2.89,each,,097928120613
+4400003111,Nabisco Original Ritz,3.98,each,,044000031114
+85103500331,Yasso Yogurt Bar,5.48,each,bought 2,851035003319
+85103500322,Yasso Yogurt Bars,5.48,each,different barcode from 85103500331,851035003227
+4548,Broccoli Crowns,2.24,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+9570511416,Pistachios,6.98,each,,095705114169
+4400006017,Nabisco Oreo Thins,4.98,each,,044000060176
+7055210554,WinCo Facial Tissue,4.47,each,larger size than 7055210518 (1.58); taxable,070552105546
+5958474503,Gift Bags Shared H,1.99,each,taxable,059584745036
+5958474506,Gift Bags Shared H,1.99,each,bought 2; taxable,059584745067
+7110114313,Cherry Lane Eggs,1.67,each,,071101143132
+5958474511,Gift Bags Shared H,2.49,each,taxable,059584745111
+7055210448,WinCo Garbage Bags,2.83,each,taxable,070552104488
+85899300607,Dude Wipes,10.72,each,bought 2; taxable,858993006079
+5045,WinCo Water 24ct,2.98,each,store code - no barcode,N/A (bulk/produce - no barcode)
+22630100000,Rockfish Pacific,4.96,each,sold by weight - package barcode encodes price; expect manual entry,226301000000
+3050840469,McClatchy SIP 4046,16.99,each,taxable,030508404697
+83418300712,Alexia Potatoes,5.42,each,,834183007125
+4011,Bananas,0.55,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+20115400000,Beef Pre-Sliced TC,11.15,each,sold by weight - package barcode encodes price; expect manual entry,201154000001
+4074,Red Yams,1.98,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+88852610698,PIPP 10698,15.99,each,taxable,888526106983
+7079640008,Cento Tomatoes,4.49,each,,070796400087
+7639700407,La Costena Peppers,1.68,each,,076397004075
+4225,Avocado Large,1.88,each,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+4889,Cilantro,0.88,each,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+4664,Tomatoes OTV,1.98,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+85335700293,Yellow Onions,0.64,per_lb,weighed but carries a barcode; same price as PLU 4093,853357002933
+4693,Jalapeno Peppers,1.28,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+3286,Red Onions,0.96,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+5100001021,Campbells Soup,1.96,each,,051000010216
+5210000493,McCormick Gourmet Spice,4.98,each,,052100004938
+4800171104,Knorr Bouillon Mexican,2.54,each,,048001711044
