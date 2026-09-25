@@ -16,10 +16,44 @@ receipt_code,item_name,unit_price,price_type,notes,full_barcode
 3890003033,Dole Fruit Gel,3.24,each,bought 2,038900030339
 4400006025,Nabisco Double Stuf Family Size,4.98,each,,044000060251
 88620811222,Mushrooms Cup 8oz,2.12,each,,886208112222
-1138423223,Zoi Greek Yogurt,3.48,each,bought 2,011384232239
+1138423223,Zoi Greek Yogurt,4.03,each,price rose from 3.48 on 09/16 to 4.03 on 09/24,011384232239
 5150000048,Smuckers Ice Cream Topping,3.24,each,,051500000489
 7766112511,Litehouse Dressing,6.12,each,,077661125113
 74236521685,Horizon Heavy Whipping Cream,6.84,each,,742365216855
 2508500328,Chaparros Tamale,5.78,each,,025085003289
 74236523295,Horizon Half and Half,6.06,each,,742365232954
 2088,Trail Mix Honey Mustard,4.68,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+4240038887,MOM Cereal,5.97,each,,042400388876
+1037422282,Carrot Cake Roll,4.98,each,,010374222823
+7055240211,WinCo Heavy Cream,2.80,each,,070552402119
+2430003173,Sunbelt Fruit Bar,2.28,each,bought 2,024300031731
+2430003104,Sunbelt Granola Bar,2.28,each,bought 2,024300031045
+18099900100,Lesser Evil Popcorn,2.98,each,,180999001001
+7055240600,WinCo Milk Whole Gallon,4.18,each,0.81 savings applied on receipt,070552406001
+71988621273,Lorena Mini Pelon,2.48,each,bought 3,719886212734
+4400006079,Nabisco Oreo,6.28,each,,044000060794
+4069771314,C/Cake Pumpkin,3.98,each,,040697713142
+4029,Pineapple,2.98,each,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+7055230622,WinCo French Toast Sticks,2.88,each,,070552306226
+4048,Limes,0.25,each,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+7055230951,WinCo Desserts,2.68,each,,070552309517
+7047000310,Yoplait Yogurt,0.58,each,,070470003108
+4093,Yellow Onions,0.64,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+7535511239,H/Select Grape Juice,1.32,each,,075355112395
+7055230405,WinCo Whipped Topping,1.12,each,,070552304055
+5020001220,Sunny D,3.14,each,,050200012204
+2631,Donut Assorted,0.78,each,bulk/bakery - no barcode,N/A (bulk/produce - no barcode)
+7106801126,State Fair Corndogs,3.98,each,,071068011260
+7055250102,WinCo Aero Cheddar,2.58,each,two similar barcodes on same receipt,070552501027
+7055250100,WinCo Aero Cheddar,2.58,each,two similar barcodes on same receipt,070552501003
+60610511270,Tomatoes Maverick,0.98,each,,606105112701
+7055200649,WinCo Hoagie,2.26,each,,070552006492
+2430004101,Little Debbie Snack,2.75,each,,024300041013
+2430003171,Sunbelt Fruit Bar,2.93,each,bought 3; different barcode from 2430003173,024300031717
+2190,M&M Peanut Butter,5.58,per_lb,bulk/produce - no barcode,N/A (bulk/produce - no barcode)
+4712508006,Cherry Pie,5.58,each,,047125080067
+2430003111,Sunbelt Granola Bar,2.93,each,different barcode from 2430003104,024300031113
+3077203156,Charmin Essentials,8.98,each,taxable,030772031568
+85921300565,Suja Gut Health,2.98,each,,859213005650
+5114137319,S/B Sponge,2.50,each,taxable,051141373195
+9792812061,SR Rico Dessert,2.89,each,,097928120613
